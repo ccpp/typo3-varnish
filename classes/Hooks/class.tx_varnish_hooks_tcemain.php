@@ -42,6 +42,15 @@ class tx_varnish_hooks_tcemain {
 	 */
 	public function clearCachePostProc($params, &$parent) {
 		$varnishController = t3lib_div::makeInstance('tx_varnish_controller');
+
+		if ($params['table']) {
+			$pageTSConfig = \TYPO3\CMS\Backend\Utility\BackendUtility::getPagesTSconfig($params['uid_page']); 
+			$tableConfig = $pageTSConfig['plugin.']['varnish.']['tables.'][$params['table'] . '.'];
+			if ($tableConfig) {
+				$varnishController->clearCache($tableConfig['clearPage'], $params['uid']);
+			}
+		}
+
 		// use either cacheCmd or uid_page
 		$cacheCmd = isset($params['cacheCmd']) ? $params['cacheCmd'] : $params['uid_page'];
 		$varnishController->clearCache($cacheCmd);
