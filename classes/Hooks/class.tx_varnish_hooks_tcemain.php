@@ -53,9 +53,19 @@ class tx_varnish_hooks_tcemain {
 			$pageTSConfig = BackendUtility::getPagesTSconfig($params['uid_page']); 
 			$tableConfig = $pageTSConfig['plugin.']['varnish.']['tables.'][$params['table'] . '.'];
 			if ($tableConfig && $pageTSConfig['TCEMAIN.']['clearCacheCmd']) {
+				$recordUid = $params['uid'];
+				# It might be a translated record!
+				if ($GLOBALS['TCA'][$params['table']]['ctrl']['transOrigPointerField']) {
+					syslog(1, 'TCA found: ' . $GLOBALS['TCA'][$params['table']]['ctrl']['transOrigPointerField']);
+					$originalRecord = $GLOBALS['TYPO3_DB']->exec_SELECTgetSingleRow('`original`.`uid`',
+						'`' . $params['table'] . '` `translated` JOIN `' . $params['table'] . '` `original` ON `original`.`uid` = `translated`.`' . $GLOBALS['TCA'][$params['table']]['ctrl']['transOrigPointerField'] . '`', '`translated`.`uid`=' . $recordUid);
+					if ($originalRecord)
+						$recordUid = $originalRecord['uid'];
+				}
+
 				$commands = GeneralUtility::trimExplode(',', $pageTSConfig['TCEMAIN.']['clearCacheCmd'], TRUE);
 				foreach($commands as $command) {
-					self::$changedRecords[$command]['params'][$params['table']][] = $params['uid'];
+					self::$changedRecords[$command]['params'][$params['table']][] = $recordUid;
 				}
 			}
 		}
