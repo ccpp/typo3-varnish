@@ -22,6 +22,8 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Backend\Utility\BackendUtility;
 
 /**
  * This class contains required hooks which are called by TYPO3
@@ -33,6 +35,10 @@
 
 class tx_varnish_hooks_tcemain {
 
+	/**
+	 * @var array
+	 */
+	static private $changedRecords;
 
 	/**
 	 * Clear cache hook
@@ -44,16 +50,29 @@ class tx_varnish_hooks_tcemain {
 		$varnishController = t3lib_div::makeInstance('tx_varnish_controller');
 
 		if ($params['table']) {
-			$pageTSConfig = \TYPO3\CMS\Backend\Utility\BackendUtility::getPagesTSconfig($params['uid_page']); 
+			$pageTSConfig = BackendUtility::getPagesTSconfig($params['uid_page']); 
 			$tableConfig = $pageTSConfig['plugin.']['varnish.']['tables.'][$params['table'] . '.'];
-			if ($tableConfig) {
-				$varnishController->clearCache($tableConfig['clearPage'], $params['uid']);
+			if ($tableConfig && $pageTSConfig['TCEMAIN.']['clearCacheCmd']) {
+				$commands = GeneralUtility::trimExplode(',', $pageTSConfig['TCEMAIN.']['clearCacheCmd'], TRUE);
+				foreach($commands as $command) {
+					self::$changedRecords[$command]['params'][$params['table']][] = $params['uid'];
+				}
 			}
 		}
 
 		// use either cacheCmd or uid_page
 		$cacheCmd = isset($params['cacheCmd']) ? $params['cacheCmd'] : $params['uid_page'];
-		$varnishController->clearCache($cacheCmd);
+
+		if (self::$changedRecords[$cacheCmd]) {
+			// Clear the page only for some parameters.
+			foreach(self::$changedRecords[$cacheCmd]['params'] as $table => $parameters) {
+				foreach($parameters as $parameter) {
+					$varnishController->clearCache($cacheCmd, $parameter);
+				}
+			}
+		} else {
+			$varnishController->clearCache($cacheCmd);
+		}
 	}
 
 }
