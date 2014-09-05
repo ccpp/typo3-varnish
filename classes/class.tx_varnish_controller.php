@@ -68,10 +68,11 @@ class tx_varnish_controller {
 	 * Executed by the clearCachePostProc Hook 
 	 * 
 	 * @param	string		$cacheCmd cache Command, see Description in t3lib_tcemain
+	 * @param	string		$parameter
 	 * @return	void
 	 */
 
-	public function clearCache($cacheCmd) {
+	public function clearCache($cacheCmd, $parameter = null) {
 
 		tx_varnish_GeneralUtility::devLog('clearCache', array('cacheCmd' => $cacheCmd));
 
@@ -84,6 +85,10 @@ class tx_varnish_controller {
 		);
 
 		$method = self::$extConf['banRequestMethod'] ? self::$extConf['banRequestMethod'] : "BAN";
+
+		if ($parameter) {
+			$command[] = 'Varnish-Ban-Parameter: ' . $parameter;
+		}
 
 		// issue command on every Varnish Server
 		/** @var $varnishHttp tx_varnish_http */

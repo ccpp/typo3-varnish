@@ -58,7 +58,10 @@ sub vcl_recv {
 			error 200 "Banned all";
 		}
 
-		if(req.http.Varnish-Ban-TYPO3-Pid && req.http.Varnish-Ban-TYPO3-Sitename) {
+		if(req.http.Varnish-Ban-TYPO3-Pid && req.http.Varnish-Ban-TYPO3-Sitename && req.http.Varnish-Ban-Parameter) {
+			ban("obj.http.TYPO3-Pid == " + req.http.Varnish-Ban-TYPO3-Pid + " && obj.http.TYPO3-Sitename == " + req.http.Varnish-Ban-TYPO3-Sitename + " && obj.http.TYPO3-Parameter-Value == " + req.http.Varnish-Ban-Parameter);
+			error 202 "Banned TYPO3 pid " + req.http.Varnish-Ban-TYPO3-Pid + " with parameter " + req.http.Varnish-Ban-Parameter + " on site " + req.http.Varnish-Ban-TYPO3-Sitename;
+		} else if(req.http.Varnish-Ban-TYPO3-Pid && req.http.Varnish-Ban-TYPO3-Sitename) {
 			ban("obj.http.TYPO3-Pid == " + req.http.Varnish-Ban-TYPO3-Pid + " && obj.http.TYPO3-Sitename == " + req.http.Varnish-Ban-TYPO3-Sitename);
 			error 202 "Banned TYPO3 pid " + req.http.Varnish-Ban-TYPO3-Pid + " on site " + req.http.Varnish-Ban-TYPO3-Sitename;
 		} else if(req.http.Varnish-Ban-TYPO3-Pid) {

@@ -21,7 +21,7 @@
 *
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
-
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * This class contains required hooks which are called by TYPO3
@@ -47,6 +47,22 @@ class tx_varnish_hooks_tslib_fe {
 		if(t3lib_div::getIndpEnv('TYPO3_REV_PROXY') == 1 || $extConf['alwaysSendTypo3Headers'] == 1) {
 			header('TYPO3-Pid: ' . $parent->id);
 			header('TYPO3-Sitename: ' . tx_varnish_GeneralUtility::getSitename());
+
+			foreach(GeneralUtility::trimExplode(',', $extConf['pageParameters']) as $parameterName) {
+				$parameterNameSplit = preg_split('/[\[\]]/', $parameterName);
+				$parameterValue = GeneralUtility::_GP($parameterNameSplit[0]);
+				array_shift($parameterNameSplit);
+
+				foreach($parameterNameSplit as $parameterNameStep) {
+					if (is_array($parameterValue) && $parameterNameStep)
+						$parameterValue = $parameterValue[$parameterNameStep];
+				}
+
+				if ($parameterValue) {
+					header('TYPO3-Parameter-Name: ' . $parameterName);
+					header('TYPO3-Parameter-Value: ' . $parameterValue);
+				}
+			}
 		}
 	}
 

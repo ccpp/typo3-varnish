@@ -6,3 +6,5 @@ enableDevLog = 0
 alwaysSendTypo3Headers = 0
 # cat=basic/; type=string; label=LLL:EXT:varnish/locallang.xml:extconf_banRequestMethod
 banRequestMethod = BAN
+# cat=basic/; type=string; label=LLL:EXT:varnish/locallang.xml:extconf_pageParameters
+pageParameters = 
