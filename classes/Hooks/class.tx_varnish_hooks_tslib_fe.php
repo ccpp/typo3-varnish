@@ -48,24 +48,67 @@ class tx_varnish_hooks_tslib_fe {
 			header('TYPO3-Pid: ' . $parent->id);
 			header('TYPO3-Sitename: ' . tx_varnish_GeneralUtility::getSitename());
 
+			if($extConf['useRealUrlPostVarSets'] || $extConf['useRealUrlFixedPostVars']) {
+				# TODO how to get correct config?
+				#$realurl = t3lib_div::makeInstance('tx_realurl');
+				#$realurl->encodeSpURL();
+				#$realurl->setConfig();
+
+				if($extConf['useRealUrlFixedPostVars']) {
+					echo "USING RealURL fixedPostVars<br>";
+					#$postVarSets = $realurl->getPostVarSetConfig($parent->id);
+					foreach($GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['realurl'] as $host=>$config) {
+						$this->extractRealUrlConfig($config['fixedPostVars'], $parent->id);
+					}
+				}
+				if($extConf['useRealUrlPostVarSets']) {
+					echo "USING RealURL postVarSets<br>";
+					#$fixedPostVars = $realurl->getPostVarSetConfig($parent->id, 'fixedPostVars');
+					#var_dump($fixedPostVars);
+					foreach($GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['realurl'] as $host=>$config) {
+						$this->extractRealUrlConfig($config['postVarSets'], $parent->id);
+					}
+				}
+			}
+
+			# TODO new function "SendSpecificHeaders if configured
 			foreach(GeneralUtility::trimExplode(',', $extConf['pageParameters']) as $parameterName) {
-				$parameterNameSplit = preg_split('/[\[\]]/', $parameterName);
-				$parameterValue = GeneralUtility::_GP($parameterNameSplit[0]);
-				array_shift($parameterNameSplit);
-
-				foreach($parameterNameSplit as $parameterNameStep) {
-					if (is_array($parameterValue) && $parameterNameStep)
-						$parameterValue = $parameterValue[$parameterNameStep];
-				}
-
-				if ($parameterValue) {
-					header('TYPO3-Parameter-Name: ' . $parameterName);
-					header('TYPO3-Parameter-Value: ' . $parameterValue);
-				}
+				echo"Using Extension config<Br>";
+				$this->handleParameter($parameterName);
 			}
 		}
 	}
 
+	private function extractRealUrlConfig($config, $pageId) {
+		# TODO is this correct? or should we consider _DEFAULT as well, if a page id sis given?
+		$key = isset($config[$pageId]) ? $pageId : '_DEFAULT';
+		while(isset($config[$key]) && !is_array($config[$key])) {
+			$key = $config[$key];
+		}
+
+		foreach($config[$key] as $configName => $varSetConfig) {
+			foreach($varSetConfig as $varConfig) {
+				$this->handleParameter($varConfig['GETvar']);
+			}
+		}
+	}
+
+	private function handleParameter($parameterName, $conf=NULL) {
+		$parameterNameSplit = preg_split('/[\[\]]/', $parameterName);
+		$parameterValue = GeneralUtility::_GP($parameterNameSplit[0]);
+		array_shift($parameterNameSplit);
+
+		foreach($parameterNameSplit as $parameterNameStep) {
+			if (is_array($parameterValue) && $parameterNameStep)
+				$parameterValue = $parameterValue[$parameterNameStep];
+		}
+
+		if ($parameterValue) {
+			echo"PARAMETER FOUND! $parameterName = $parameterValue<Br>";
+			header('TYPO3-Parameter-Name: ' . $parameterName);
+			header('TYPO3-Parameter-Value: ' . $parameterValue);
+		}
+	}
 }
 
 global $TYPO3_CONF_VARS;
